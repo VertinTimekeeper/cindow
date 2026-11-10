@@ -1,0 +1,20 @@
+# 代码负责人（CODEOWNERS）
+# 语法：<路径匹配> <@用户名>
+# 生效前提：仓库 Settings → Branches → main 勾选 "Require review from Code Owners"
+# 说明：单人项目统一指向仓库 owner；将来有多人协作时按模块拆分
+
+# 数据模型与迁移：改动会影响生产结构，必须复核
+/prisma/                  @VertinTimekeeper
+
+# 通用库（认证、数据库连接、媒体、查询）：被全局引用，改动面大
+/src/lib/                 @VertinTimekeeper
+
+# CI、模板、协作配置
+/.github/                 @VertinTimekeeper
+
+# 依赖清单：锁文件变更需要明确理由
+/package.json             @VertinTimekeeper
+/package-lock.json        @VertinTimekeeper
+
+# 架构与接入文档
+/docs/                    @VertinTimekeeper

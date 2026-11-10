@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 只读权限：CI 不需要写仓库
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 构建期用的占位数据库，仅用于本地 SQLite 结构同步，不连接外部服务
+  DATABASE_URL: "file:./dev.db"
+  MEDIA_ROOT: "./storage/media"
+
+jobs:
+  typecheck-build:
+    # 注意：jobs.<id>.name 必须与 docs/branch-protection.md 里的 required status check 一致
+    name: typecheck-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 生成 Prisma Client
+        run: npx prisma generate
+
+      - name: 准备本地 SQLite 结构
+        run: npx prisma db push --skip-generate
+
+      - name: 类型检查
+        run: npx tsc --noEmit
+
+      - name: 构建
+        run: npm run build
+
+      - name: Prisma schema 变更检查
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          git fetch --no-tags --depth=1 origin "$base" >/dev/null 2>&1 || true
+
+          if ! git diff --name-only "$base" HEAD -- prisma/schema.prisma | grep -q .; then
+            echo "prisma/schema.prisma 未变更，跳过迁移提醒。"
+            exit 0
+          fi
+
+          if git diff --name-only "$base" HEAD -- prisma/migrations | grep -q .; then
+            echo "schema.prisma 已变更，且本次 PR 包含 prisma/migrations 变更。"
+            {
+              echo "### Prisma 迁移检查"
+              echo "- 检测到 \`prisma/schema.prisma\` 与 \`prisma/migrations/\` 同时变更"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "::warning title=需要迁移::prisma/schema.prisma 有变更，但未见 prisma/migrations 变更。生产目标为 PostgreSQL，请确认是纯本地字段调整，或补上迁移文件。"
+          {
+            echo "### Prisma 迁移检查 ⚠️"
+            echo ""
+            echo "\`prisma/schema.prisma\` 有变更，但没有对应的 \`prisma/migrations/\` 变更。"
+            echo ""
+            echo "- 纯本地/开发期字段调整：可忽略"
+            echo "- 会影响生产结构：请补 \`npx prisma migrate dev --name <描述>\` 并提交迁移文件"
+          } >> "$GITHUB_STEP_SUMMARY"
