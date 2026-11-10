@@ -1,0 +1,232 @@
+// Vidora 数据模型 —— 本地骨架（SQLite）
+// 生产环境目标为 PostgreSQL，字段级设计草案见 db/schema.postgres.sql
+// SQLite 限制：不支持 enum / Json / 数组，因此统一用 String 存枚举与 JSON 字符串
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  displayName  String
+  passwordHash String
+  avatarUrl    String?
+  bio          String?
+  // user | creator | admin
+  role         String   @default("user")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  videos    Video[]
+  comments  Comment[]
+  danmaku   Danmaku[]
+  sessions  Session[]
+  likes     VideoLike[]
+  coins     Coin[]
+  favorites Favorite[]
+  following Follow[]      @relation("follower")
+  followers Follow[]      @relation("following")
+  history   WatchHistory[]
+  reports   Report[]
+}
+
+model Session {
+  id        String   @id // 随机 token，放在 httpOnly Cookie 里
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String
+  slug   String  @unique
+  sort   Int     @default(0)
+  videos Video[]
+}
+
+model Tag {
+  id     String     @id @default(cuid())
+  name   String     @unique
+  slug   String     @unique
+  videos VideoTag[]
+}
+
+model VideoTag {
+  videoId String
+  tagId   String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, tagId])
+}
+
+model Video {
+  id          String  @id @default(cuid())
+  authorId    String
+  author      User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title       String
+  description String  @default("")
+  coverUrl    String?
+  durationSec Int     @default(0)
+  // processing | published | rejected | draft
+  status      String  @default("processing")
+  // public | unlisted | private
+  visibility  String  @default("public")
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  isOriginal  Boolean @default(true)
+
+  viewCount     Int @default(0)
+  likeCount     Int @default(0)
+  coinCount     Int @default(0)
+  favoriteCount Int @default(0)
+  commentCount  Int @default(0)
+  danmakuCount  Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  sources   VideoSource[]
+  tags      VideoTag[]
+  comments  Comment[]
+  danmaku   Danmaku[]
+  likes     VideoLike[]
+  coins     Coin[]
+  favorites Favorite[]
+  history   WatchHistory[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([authorId])
+}
+
+// 一个视频的多个清晰度版本
+model VideoSource {
+  id       String @id @default(cuid())
+  videoId  String
+  video    Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  label    String // 360p | 480p | 720p | 1080p | source
+  width    Int    @default(0)
+  height   Int    @default(0)
+  bitrate  Int    @default(0)
+  filesize Int    @default(0)
+  url      String
+
+  @@unique([videoId, label])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  videoId   String
+  video     Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?  @relation("replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("replies")
+  content   String
+  likeCount Int       @default(0)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([videoId, createdAt])
+}
+
+model Danmaku {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  content   String
+  timeSec   Float // 出现时间点（秒，可带小数）
+  color     String   @default("#ffffff")
+  // scroll | top | bottom
+  mode      String   @default("scroll")
+  fontSize  Int      @default(24)
+  createdAt DateTime @default(now())
+
+  @@index([videoId, timeSec])
+}
+
+model VideoLike {
+  userId    String
+  videoId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, videoId])
+}
+
+model Coin {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  amount    Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+}
+
+model Favorite {
+  userId    String
+  videoId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, videoId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
+
+// 服务端播放进度（跨设备续播）。MVP 阶段前端先用 localStorage，此表为第二期落库预留
+model WatchHistory {
+  userId      String
+  videoId     String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  progressSec Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@id([userId, videoId])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  // video | comment | user
+  targetType String
+  targetId   String
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reason     String
+  detail     String?
+  // pending | handled | dismissed
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+
+  @@index([status, createdAt])
+}

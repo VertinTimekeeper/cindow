@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-ink: #1b1d21;
+  --color-ink-soft: #3c4048;
+  --color-muted: #6b6f76;
+  --color-faint: #969aa1;
+  --color-line: #e5e2dc;
+  --color-line-strong: #d5d1c9;
+  --color-accent: #2f6f6b;
+  --color-accent-soft: #eaf2f0;
+  --color-warn: #a8632f;
+  --color-danger: #a8443b;
+
+  --radius-card: 12px;
+
+  --font-sans: ui-sans-serif, -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* 首页/列表的骨架屏 */
+@keyframes vidora-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.skeleton {
+  background: #ece9e3;
+  border-radius: 6px;
+  animation: vidora-pulse 1.6s ease-in-out infinite;
+}
+
+/* 弹幕：从右向左匀速通过，duration 由 JS 按轨道宽度/文字长度注入 */
+@keyframes vidora-danmaku-scroll {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.danmaku-item {
+  position: absolute;
+  white-space: nowrap;
+  will-change: transform;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  animation-name: vidora-danmaku-scroll;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.danmaku-paused {
+  animation-play-state: paused;
+}
+
+/* 原生播放器：去掉默认外观里不需要的部分，保留可访问性 */
+video::-webkit-media-controls-panel {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+}
