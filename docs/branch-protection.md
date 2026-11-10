@@ -105,3 +105,83 @@ gh api -X DELETE repos/VertinTimekeeper/cindow/branches/main/protection
 - 分支保护对 **deploy key** 同样生效：只有只读权限的 key 不能推；有写权限的 key 绕过不了「必须走 PR」的规则。
 - 因此「唯一可推送的机器」指的是**能推送分支**，而不是**能直推 `main`**。日常仍应推特性分支 + PR。
 - 如需在紧急情况下直推 `main`，不要长期关闭保护，临时用有权限的账号操作后立刻恢复，并在 PR/issue 里记录原因。
+
+---
+
+## 6. CI 不可用时的过渡方案
+
+### 6.1 为什么撤掉了「必需检查」
+
+本仓库是 `public`，公共仓库的 Actions 分钟数免费，但账号层面仍缺付款方式，任务在启动前就被平台拒绝，日志里没有任何 step：
+
+> `The job was not started because recent account payments have failed or your spending limit needs to be increased.`
+
+也就是说 `typecheck-build` 这个 check 永远不可能变绿。若它仍是必需检查，**每个 PR 都会被永久卡住**。因此当前配置为：
+
+| 开关 | 当前值 | 说明 |
+|---|---|---|
+| Require a pull request before merging | ✅ 开 | 仍禁止直推 `main` |
+| Required approvals | 1 | 单人项目需管理员绕过才能合并 |
+| Dismiss stale approvals | ✅ 开 | |
+| Require conversation resolution | ✅ 开 | |
+| Require linear history | ✅ 开 | 合并请用 Squash / Rebase |
+| Block force pushes | ✅ 开 | |
+| Restrict deletions | ✅ 开 | |
+| **Require status checks** | ❌ **已撤** | 待计费恢复后加回 |
+| Include administrators | ❌ 关 | 否则唯一成员无法批准自己的 PR，会造成死锁 |
+
+`.github/workflows/ci.yml` **保留未删**，计费恢复后无需改动即可生效。
+
+### 6.2 本地检查覆盖了什么
+
+`main` 的合并门槛从「远程 CI」暂时换成「本机手动/钩子检查」，对应关系：
+
+| 原 CI 步骤 | 本地替代 | 差异 |
+|---|---|---|
+| `npm ci` | `scripts/check.sh` 第 1 步（已装且 lockfile 未变则跳过） | 无 |
+| `prisma generate` | 第 2 步 | 无 |
+| `tsc --noEmit` | 第 3 步 | 无 |
+| `npm run build` | 第 4 步 | 无 |
+| Prisma schema 变更提醒 | **无** | 需人工留意 `prisma/schema.prisma` 是否改了却没加迁移 |
+| 独立 runner / 干净环境 | **无** | 本机可能残留 `node_modules`、`.next`，漏掉「全新安装才能复现」的问题 |
+| Node 版本固定 | **无** | CI 用 `22`；本机版本可能不同，建议 `node -v` 自查 |
+
+用法：
+
+```bash
+bash scripts/check.sh                  # 完整四步
+bash scripts/check.sh --skip-build     # 只跑到类型检查，快速反馈
+
+bash scripts/install-hooks.sh          # 安装 pre-push 钩子（自动调用上面的脚本）
+bash scripts/install-hooks.sh --status # 查看是否已安装
+bash scripts/install-hooks.sh --uninstall
+
+git push --no-verify                   # 紧急跳过钩子
+CHECK_ARGS=--skip-build git push       # 跳过重量级构建，只做类型检查
+```
+
+钩子只写入 `.git/hooks/pre-push`，不进版本库，每台机器需各自安装一次。
+
+### 6.3 将来如何恢复远程 CI
+
+前置条件：账号已绑定可用的付款方式，且 `gh run list` 能看到最近一次运行**真的执行了 step**（不是 3 秒内 0 step 结束）。
+
+1. 确认工作流能跑通：打开 Actions 页面手动触发或推一个分支验证，确认 `typecheck-build` 出现且为绿色。
+2. 重新加回必需检查（`main` 已保护，此命令只改检查项，不影响其他开关）：
+
+```bash
+gh api -X POST repos/VertinTimekeeper/cindow/branches/main/protection/required_status_checks \
+  -f strict=true \
+  -f 'contexts[]=typecheck-build'
+```
+
+3. 校验：
+
+```bash
+gh api repos/VertinTimekeeper/cindow/branches/main/protection/required_status_checks \
+  --jq '{contexts,strict}'
+```
+
+4. 若某天工作流改名或 job 改名，记得同步这里的 `contexts[]`，否则 PR 会因「等待一个不存在的 check」而一直 pending。
+
+> 顺序很重要：**先让 check 真正变绿，再设为必需**。反过来做会让所有 PR 立刻不可合并。
