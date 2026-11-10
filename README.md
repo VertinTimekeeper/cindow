@@ -1,4 +1,4 @@
-# Vidora（占位名）
+# Cindow
 
 个人练习用的视频社区站骨架。方案见 [PLAN.md](PLAN.md)，架构与多执行者协作见 [docs/architecture-handbook.md](docs/architecture-handbook.md)。
 
@@ -14,7 +14,7 @@ npm run dev                        # http://localhost:3000
 
 或一条命令：`npm run setup && npm run dev`
 
-演示账号：`demo@vidora.local` / `vidora1234`
+演示账号：`demo@cindow.local` / `cindow1234`
 
 ## 技术栈
 

@@ -1,4 +1,4 @@
-// Vidora 数据模型 —— 本地骨架（SQLite）
+// Cindow 数据模型 —— 本地骨架（SQLite）
 // 生产环境目标为 PostgreSQL，字段级设计草案见 db/schema.postgres.sql
 // SQLite 限制：不支持 enum / Json / 数组，因此统一用 String 存枚举与 JSON 字符串
 

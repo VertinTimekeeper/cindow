@@ -7,7 +7,7 @@ import { hashPassword } from "../src/lib/password";
 
 const prisma = new PrismaClient();
 
-const DEMO_PASSWORD = "vidora1234";
+const DEMO_PASSWORD = "cindow1234";
 
 type SeedVideo = {
   slug: string;
@@ -94,10 +94,10 @@ const CATEGORIES = [
 ];
 
 const USERS = [
-  { username: "demo", displayName: "演示账号", email: "demo@vidora.local", bio: "骨架工程的默认账号" },
-  { username: "lin", displayName: "林与", email: "lin@vidora.local", bio: "拍生活，也拍失败的生活" },
-  { username: "mo", displayName: "莫名", email: "mo@vidora.local", bio: "科普 / 声音" },
-  { username: "kai", displayName: "Kai", email: "kai@vidora.local", bio: "写代码，偶尔讲给别人听" },
+  { username: "demo", displayName: "演示账号", email: "demo@cindow.local", bio: "骨架工程的默认账号" },
+  { username: "lin", displayName: "林与", email: "lin@cindow.local", bio: "拍生活，也拍失败的生活" },
+  { username: "mo", displayName: "莫名", email: "mo@cindow.local", bio: "科普 / 声音" },
+  { username: "kai", displayName: "Kai", email: "kai@cindow.local", bio: "写代码，偶尔讲给别人听" },
 ];
 
 const DANMAKU: Record<string, Array<[number, string, string?]>> = {
@@ -286,7 +286,7 @@ async function main() {
   });
 
   console.log(`种子数据完成：${USERS.length} 个用户 / ${VIDEOS.length} 个视频`);
-  console.log(`演示账号：demo@vidora.local  密码：${DEMO_PASSWORD}`);
+  console.log(`演示账号：demo@cindow.local  密码：${DEMO_PASSWORD}`);
 }
 
 main()

@@ -48,7 +48,7 @@ export function Player({
   const [notice, setNotice] = useState("");
   const [sending, setSending] = useState(false);
 
-  const progressKey = `vidora:progress:${videoId}`;
+  const progressKey = `cindow:progress:${videoId}`;
 
   useEffect(() => {
     itemsRef.current = initialDanmaku;

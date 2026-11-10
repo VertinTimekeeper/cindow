@@ -1,4 +1,4 @@
--- Vidora 生产环境数据模型草案（PostgreSQL 16+）
+-- Cindow 生产环境数据模型草案（PostgreSQL 16+）
 -- 与 prisma/schema.prisma 对应；差异点：
 --   1. 枚举用原生 enum 类型，避免魔法字符串
 --   2. 标签/多值字段用 text[] 或 jsonb

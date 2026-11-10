@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "./db";
 
-const SESSION_COOKIE = "vidora_session";
+const SESSION_COOKIE = "cindow_session";
 const SESSION_TTL_DAYS = 30;
 
 export type SessionUser = {

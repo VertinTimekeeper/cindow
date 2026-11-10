@@ -9,8 +9,8 @@ type Mode = "login" | "register";
 export function AuthForm({ next }: { next: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
-  const [account, setAccount] = useState("demo@vidora.local");
-  const [password, setPassword] = useState("vidora1234");
+  const [account, setAccount] = useState("demo@cindow.local");
+  const [password, setPassword] = useState("cindow1234");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
@@ -132,7 +132,7 @@ export function AuthForm({ next }: { next: string }) {
 
       {mode === "login" && (
         <p className="mt-4 text-center text-xs text-faint">
-          演示账号已预填：demo@vidora.local / vidora1234
+          演示账号已预填：demo@cindow.local / cindow1234
         </p>
       )}
 

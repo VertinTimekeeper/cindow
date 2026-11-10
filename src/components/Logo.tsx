@@ -10,7 +10,7 @@ export function Logo({ size = 26 }: { size?: number }) {
 export function Wordmark() {
   return (
     <span className="text-[17px] font-semibold tracking-[0.14em] text-ink">
-      VIDORA
+      CINDOW
     </span>
   );
 }

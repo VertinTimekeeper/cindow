@@ -44,7 +44,7 @@ a {
 }
 
 /* 首页/列表的骨架屏 */
-@keyframes vidora-pulse {
+@keyframes cindow-pulse {
   0%,
   100% {
     opacity: 1;
@@ -57,11 +57,11 @@ a {
 .skeleton {
   background: #ece9e3;
   border-radius: 6px;
-  animation: vidora-pulse 1.6s ease-in-out infinite;
+  animation: cindow-pulse 1.6s ease-in-out infinite;
 }
 
 /* 弹幕：从右向左匀速通过，duration 由 JS 按轨道宽度/文字长度注入 */
-@keyframes vidora-danmaku-scroll {
+@keyframes cindow-danmaku-scroll {
   from {
     transform: translateX(100%);
   }
@@ -75,7 +75,7 @@ a {
   white-space: nowrap;
   will-change: transform;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-  animation-name: vidora-danmaku-scroll;
+  animation-name: cindow-danmaku-scroll;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
